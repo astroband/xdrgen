@@ -3,6 +3,7 @@ module Xdrgen::Generators
 
   autoload :Base
   autoload :Ruby
+  autoload :Rust
   autoload :Go
   autoload :Javascript
   autoload :Java
