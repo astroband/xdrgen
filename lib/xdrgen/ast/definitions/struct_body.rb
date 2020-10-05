@@ -4,7 +4,7 @@ module Xdrgen::AST
       include Concerns::HasChildren
 
       def members
-        children.select{|c| c.is_a?(StructMember)}
+        children.select { |c| c.is_a?(StructMember) }
       end
     end
   end

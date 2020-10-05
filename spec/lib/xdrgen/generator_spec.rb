@@ -1,9 +1,7 @@
-require 'spec_helper'
-
 describe Xdrgen::Generators do
-  languages = %w(ruby javascript go java elixir)
-  focus_language = "" #"go"
-  focus_basename = "" #"optional.x"
+  languages = %w[ruby javascript go java elixir]
+  focus_language = "" # "go"
+  focus_basename = "" # "optional.x"
 
   generator_fixture_paths.each do |path|
     languages.each do |lang|
@@ -11,19 +9,18 @@ describe Xdrgen::Generators do
       next if focus_language.present? && lang != focus_language
 
       it "can generate #{File.basename path} in #{lang}" do
-        c = generate lang, path
+        generate lang, path
       end
-
     end
   end
 
   def generate(language, path)
     compilation = Xdrgen::Compilation.new(
-        [path],
-        output_dir: "tmp/generator_spec_#{language}/#{File.basename path}",
-        language:   language,
-        namespace:  "MyXDR"
-      )
+      [path],
+      output_dir: "tmp/generator_spec_#{language}/#{File.basename path}",
+      language: language,
+      namespace: "MyXDR"
+    )
     compilation.compile
     compilation
   end

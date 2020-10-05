@@ -1,11 +1,10 @@
 module Xdrgen
   module Generators
-
     class Javascript < Xdrgen::Generators::Base
       MAX_INT = (2**31) - 1
       def generate
         path = "#{@namespace}_generated.js"
-        out = @output.open(path)
+        out = @output.open_file(path)
 
         render_top_matter out
         render_define_block(out) do
@@ -14,14 +13,15 @@ module Xdrgen
       end
 
       private
+
       def render_definitions(out, node)
-        node.definitions.each{|n| render_definition out, n }
-        node.namespaces.each{|n| render_definitions out, n }
+        node.definitions.each { |n| render_definition out, n }
+        node.namespaces.each { |n| render_definitions out, n }
       end
 
       def render_nested_definitions(out, defn)
         return unless defn.respond_to? :nested_definitions
-        defn.nested_definitions.each{|ndefn| render_definition out, ndefn}
+        defn.nested_definitions.each { |ndefn| render_definition out, ndefn }
       end
 
       def render_definition(out, defn)
@@ -29,15 +29,15 @@ module Xdrgen
         render_source_comment(out, defn)
 
         case defn
-        when AST::Definitions::Struct ;
+        when AST::Definitions::Struct
           render_struct out, defn
-        when AST::Definitions::Enum ;
+        when AST::Definitions::Enum
           render_enum out, defn
-        when AST::Definitions::Union ;
+        when AST::Definitions::Union
           render_union out, defn
-        when AST::Definitions::Typedef ;
+        when AST::Definitions::Typedef
           render_typedef out, defn
-        when AST::Definitions::Const ;
+        when AST::Definitions::Const
           render_const out, defn
         end
 
@@ -59,7 +59,6 @@ module Xdrgen
           // ===========================================================================
         EOS
       end
-
 
       def render_top_matter(out)
         out.puts <<-EOS.strip_heredoc
@@ -83,7 +82,6 @@ module Xdrgen
         out.puts "export default types;"
         out.break
       end
-
 
       def render_typedef(out, typedef)
         out.puts "xdr.typedef(\"#{name typedef}\", #{reference typedef.declaration.type});"
@@ -130,7 +128,7 @@ module Xdrgen
                 switch = if acase.value.is_a?(AST::Identifier)
                   if union.discriminant.type.is_a?(AST::Typespecs::Int)
                     member = union.resolved_case(acase)
-                    "#{member.value}"
+                    member.value.to_s
                   else
                     '"' + member_name(acase.value) + '"'
                   end
@@ -160,12 +158,12 @@ module Xdrgen
             arm_name = arm.void? ? "xdr.void()" : member_name(arm)
             out.puts "defaultArm: #{arm_name},"
           end
-
         end
         out.puts "});"
       end
 
       private
+
       def name(named)
         parent = name named.parent_defn if named.is_a?(AST::Concerns::NestedDefinition)
 
@@ -179,7 +177,7 @@ module Xdrgen
         #  => false
         #
         plural = named.name.downcase.pluralize == named.name.downcase
-        base   = named.name.underscore.classify
+        base = named.name.underscore.classify
         result = plural ? base.pluralize : base
 
         "#{parent}#{result}"
@@ -194,7 +192,7 @@ module Xdrgen
       end
 
       def reference(type)
-        baseReference = case type
+        base_reference = case type
         when AST::Typespecs::Bool
           "xdr.bool()"
         when AST::Typespecs::Double
@@ -231,23 +229,21 @@ module Xdrgen
 
         case type.sub_type
         when :simple
-          baseReference
+          base_reference
         when :optional
-          "xdr.option(#{baseReference})"
+          "xdr.option(#{base_reference})"
         when :array
           is_named, size = type.array_size
           size = is_named ? "xdr.lookup(\"#{size}\")" : size
-          "xdr.array(#{baseReference}, #{size})"
+          "xdr.array(#{base_reference}, #{size})"
         when :var_array
           is_named, size = type.array_size
           size = is_named ? "xdr.lookup(\"#{size}\")" : (size || MAX_INT)
-          "xdr.varArray(#{baseReference}, #{size})"
+          "xdr.varArray(#{base_reference}, #{size})"
         else
           raise "Unknown sub_type: #{type.sub_type}"
         end
-
       end
-
     end
   end
 end

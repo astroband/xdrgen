@@ -1,12 +1,10 @@
 module Xdrgen
   module Generators
-
     class Go < Xdrgen::Generators::Base
-
       def generate
         @already_rendered = []
         path = "#{@namespace}_generated.go"
-        out = @output.open(path)
+        out = @output.open_file(path)
 
         render_top_matter out
         render_definitions(out, @top)
@@ -17,7 +15,6 @@ module Xdrgen
 
       def render_typedef(out, typedef)
         out.puts "type #{name typedef} #{reference typedef.declaration.type}"
-
 
         # write sizing restrictions
         case typedef.declaration
@@ -96,7 +93,7 @@ module Xdrgen
 
         out.break
 
-        constructor_name  = "New#{name typedef}"
+        constructor_name = "New#{name typedef}"
         discriminant_arg = private_name union.discriminant
         discriminant_type = reference union.discriminant.type
 
@@ -115,7 +112,7 @@ module Xdrgen
         # and val := union.MustArmName()
         union.arms.each do |arm|
           next if arm.void?
-          out.puts   <<-EOS.strip_heredoc
+          out.puts <<-EOS.strip_heredoc
             // Must#{name arm} retrieves the #{name arm} value from the union,
             // panicing if the value is not set.
             func (u #{name typedef}) Must#{name arm}() #{reference arm.type} {
@@ -129,7 +126,6 @@ module Xdrgen
             }
           EOS
         end
-
       end
 
       def render_const(out, const)
@@ -138,20 +134,20 @@ module Xdrgen
       end
 
       def render_definitions(out, node)
-        node.definitions.each{|n| render_definition out, n }
-        node.namespaces.each{|n| render_definitions out, n }
+        node.definitions.each { |n| render_definition out, n }
+        node.namespaces.each { |n| render_definitions out, n }
       end
 
       def render_nested_definitions(out, defn)
         return unless defn.respond_to? :nested_definitions
-        defn.nested_definitions.each{|ndefn| render_definition out, ndefn}
+        defn.nested_definitions.each { |ndefn| render_definition out, ndefn }
       end
 
       def render_definition(out, defn)
         if @already_rendered.include? name(defn)
 
           unless defn.is_a?(AST::Definitions::Namespace)
-            $stderr.puts "warn: #{name(defn)} is defined twice.  skipping"
+            warn "warn: #{name(defn)} is defined twice.  skipping"
           end
 
           return
@@ -163,19 +159,19 @@ module Xdrgen
         @already_rendered << name(defn)
 
         case defn
-        when AST::Definitions::Struct ;
+        when AST::Definitions::Struct
           render_struct out, defn
           render_binary_interface out, name(defn)
-        when AST::Definitions::Enum ;
+        when AST::Definitions::Enum
           render_enum out, defn
           render_binary_interface out, name(defn)
-        when AST::Definitions::Union ;
+        when AST::Definitions::Union
           render_union out, defn
           render_binary_interface out, name(defn)
-        when AST::Definitions::Typedef ;
+        when AST::Definitions::Typedef
           render_typedef out, defn
           render_binary_interface out, name(defn)
-        when AST::Definitions::Const ;
+        when AST::Definitions::Const
           render_const out, defn
         end
       end
@@ -198,11 +194,9 @@ module Xdrgen
       def render_struct(out, struct)
         out.puts "type #{name struct} struct {"
         out.indent do
-
           struct.members.each do |m|
             out.puts "#{name m} #{reference(m.declaration.type)} #{field_tag struct, m}"
           end
-
         end
         out.puts "}"
         out.break
@@ -226,11 +220,9 @@ module Xdrgen
         # render the map used by xdr to decide valid values
         out.puts "var #{private_name enum}Map = map[int32]string{"
         out.indent do
-
           enum.members.each do |m|
             out.puts "#{m.value}: \"#{name enum}#{name m}\","
           end
-
         end
         out.puts "}"
 
@@ -257,7 +249,6 @@ module Xdrgen
       end
 
       def render_union(out, union)
-
         out.puts "type #{name union} struct{"
         out.indent do
           out.puts "#{name union.discriminant} #{reference union.discriminant.type}"
@@ -375,7 +366,7 @@ module Xdrgen
       private
 
       def reference(type)
-        baseReference = case type
+        base_reference = case type
         when AST::Typespecs::Bool
           "bool"
         when AST::Typespecs::Double
@@ -412,9 +403,9 @@ module Xdrgen
 
         case type.sub_type
         when :simple
-          baseReference
+          base_reference
         when :optional
-          "*#{baseReference}"
+          "*#{base_reference}"
         when :array
           is_named, size = type.array_size
 
@@ -423,13 +414,12 @@ module Xdrgen
             size = name @top.find_definition(size)
           end
 
-          "[#{size}]#{baseReference}"
+          "[#{size}]#{base_reference}"
         when :var_array
-          "[#{size}]#{baseReference}"
+          "[#{size}]#{base_reference}"
         else
           raise "Unknown sub_type: #{type.sub_type}"
         end
-
       end
 
       def name(named)
@@ -450,15 +440,14 @@ module Xdrgen
 
       def escape_name(name)
         case name
-        when "type" ; "aType"
-        when "func" ; "aFunc"
-        else ; name
+        when "type" then "aType"
+        when "func" then "aFunc"
+        else; name
         end
       end
 
       def render_union_constructor(out, union)
-        constructor_name  = "New#{name union}"
-
+        constructor_name = "New#{name union}"
 
         discriminant_arg = private_name union.discriminant
         discriminant_type = reference union.discriminant.type
@@ -491,7 +480,6 @@ module Xdrgen
       end
 
       def access_arm(arm)
-
         <<-EOS.strip_heredoc
           // Must#{name arm} retrieves the #{name arm} value from the union,
           // panicing if the value is not set.
@@ -531,17 +519,16 @@ module Xdrgen
 
         union.normal_arms.each do |arm|
           arm.cases.each do |c|
-
             value = if c.value.is_a?(AST::Identifier)
-                      member = union.resolved_case(c)
-                      if union.discriminant_type.nil? then
-                        "int32(#{name member.enum}#{name member})"
-                      else
-                        "#{name union.discriminant_type}#{name member}"
-                      end
-                    else
-                      c.value.text_value
-                    end
+              member = union.resolved_case(c)
+              if union.discriminant_type.nil?
+                "int32(#{name member.enum}#{name member})"
+              else
+                "#{name union.discriminant_type}#{name member}"
+              end
+            else
+              c.value.text_value
+            end
 
             out.puts "    case #{value}:"
             out.puts "      #{yield arm, c}"
@@ -571,8 +558,6 @@ module Xdrgen
 
         return "`xdrmaxsize:\"#{size}\"`" if size.present?
       end
-
     end
-
   end
 end

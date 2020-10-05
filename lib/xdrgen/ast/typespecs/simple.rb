@@ -3,12 +3,11 @@ module Xdrgen::AST::Typespecs
     include Base
 
     def resolved_type
-      name = self.text_value.split("::").last
+      name = text_value.split("::").last
       result = root.find_definition name
 
       raise Xdrgen::TypeResolutionError, "Cannot resolve type `#{name}`" if result.blank?
       result
     end
-
   end
 end

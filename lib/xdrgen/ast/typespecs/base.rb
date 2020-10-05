@@ -22,6 +22,5 @@ module Xdrgen::AST::Typespecs
 
       [decl.size_spec.named?, decl.size]
     end
-
   end
 end

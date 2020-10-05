@@ -3,7 +3,7 @@ module Xdrgen::AST
     class UnionDefaultArm < Base
       extend Memoist
       include Concerns::Contained
-      
+
       delegate :name, to: :declaration
       delegate :type, to: :declaration
 

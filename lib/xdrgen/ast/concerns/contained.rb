@@ -1,18 +1,19 @@
 module Xdrgen::AST
   module Concerns
-    module Contained      
+    module Contained
       extend Memoist
 
       protected
+
       memoize def ancestors
-        current = self.parent
+        current = parent
         result = []
 
         while current.present?
           result.unshift(current)
           current = current.parent
         end
-        
+
         result
       end
 
@@ -25,7 +26,7 @@ module Xdrgen::AST
       end
 
       def find_ancestors(type)
-        ancestors.select{|a| a.is_a?(type)}
+        ancestors.select { |a| a.is_a?(type) }
       end
     end
   end

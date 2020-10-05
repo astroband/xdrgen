@@ -20,9 +20,7 @@ module Xdrgen::AST
       end
 
       def resolved_cases
-        enum = union.discriminant_type
-
-        cases.map{|kase| resolved_case kase}
+        cases.map { |kase| resolved_case kase }
       end
 
       def void?

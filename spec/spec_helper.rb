@@ -1,13 +1,11 @@
-require 'bundler/setup'
+require "bundler/setup"
 Bundler.setup
 
-require 'pry'
-require 'xdrgen'
+require "xdrgen"
 
 SPEC_ROOT = __dir__
 
-Dir["#{__dir__}/support/**/*.rb"].each { |f| require f }
+require_relative "support/fixtures"
 
 RSpec.configure do |config|
-
 end

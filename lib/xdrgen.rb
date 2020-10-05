@@ -1,6 +1,6 @@
 require "xdrgen/version"
 require "active_support/all"
-require 'memoist'
+require "memoist"
 
 module Xdrgen
   extend ActiveSupport::Autoload
@@ -15,10 +15,10 @@ module Xdrgen
   autoload :Output
   autoload :OutputFile
 
-  class ParseError < StandardError ; end
+  class ParseError < StandardError; end
 
-  class GenerateError < StandardError ; end
-  class DuplicateFileError < GenerateError ; end
+  class GenerateError < StandardError; end
+  class DuplicateFileError < GenerateError; end
 
-  class TypeResolutionError < StandardError ; end
+  class TypeResolutionError < StandardError; end
 end

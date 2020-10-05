@@ -1,4 +1,4 @@
-require 'treetop'
+require "treetop"
 
 module Xdrgen
   class Parser
@@ -7,20 +7,18 @@ module Xdrgen
     def initialize
       @grammar = XdrMainGrammarParser.new
     end
-    
+
     def parse(data)
       @grammar.parse(data).tap do |tree|
-        if(tree.nil?)
+        if tree.nil?
           raise Xdrgen::ParseError, "Couldn't parse, failed at: #{@grammar.failure_line}:#{@grammar.failure_column}\n#{@grammar.failure_reason}"
         end
       end
     end
-
-
   end
 end
 
-grammars = %w(
+grammars = %w[
   base
   declaration
   enum
@@ -31,8 +29,7 @@ grammars = %w(
   namespace
   comments
   main
-)
-
+]
 
 # load the grammar files
 grammars.each do |g|

@@ -6,12 +6,12 @@ module Xdrgen::AST
       memoize def arms
         [
           normal_arms,
-          default_arm,
+          default_arm
         ].flatten.compact
       end
 
       def normal_arms
-        arms_n.elements.select{|c| c.is_a?(UnionArm)}
+        arms_n.elements.select { |c| c.is_a?(UnionArm) }
       end
 
       def default_arm
