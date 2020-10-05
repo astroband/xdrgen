@@ -1,4 +1,19 @@
+version: ~> 1.0
+
+dist: focal
+os: linux
+virt: lxd
+
 language: ruby
-script: bundle exec rspec
+cache:
+- bundler
+
 rvm:
-- 2.7.0
+- 2.5
+- 2.6
+- 2.7
+
+before_install:
+- yes | gem update --system --force
+- bundle config set without 'development debug'
+

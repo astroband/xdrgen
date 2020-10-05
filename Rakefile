@@ -1,6 +1,10 @@
+# frozen_string_literal: true
+
 require "bundler/gem_tasks"
+require 'rspec/core/rake_task'
 
-task :clean do
-  system("rm -rf ./gen")
-end
+RSpec::Core::RakeTask.new(:spec)
 
+
+CLEAN.include("gen/**/*")
+task default: :spec
