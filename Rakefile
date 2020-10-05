@@ -11,5 +11,5 @@ RSpec::Core::RakeTask.new(:spec)
 desc "Run code quality checks"
 task code_quality: %i[bundle:audit standard]
 
-CLEAN.include("gen/**/*")
+CLEAN.include("gen/**", "tmp/**")
 task default: %i[code_quality spec]

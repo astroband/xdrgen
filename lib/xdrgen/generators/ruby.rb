@@ -1,35 +1,33 @@
 module Xdrgen
   module Generators
-
     class Ruby < Xdrgen::Generators::Base
-
       def generate
         render_index
         render_definitions(@top)
       end
 
       private
+
       def render_index
         root_file = "#{@namespace}.rb"
-        out = @output.open(root_file)
+        out = @output.open_file(root_file)
         render_top_matter out
 
         render_definitions_index(out, @top)
       end
 
       def render_definitions_index(out, node)
-
         node.definitions.each do |member|
           case member
-          when AST::Definitions::Namespace ;
+          when AST::Definitions::Namespace
             render_namespace_index(out, member)
-          when AST::Definitions::Typedef ;
+          when AST::Definitions::Typedef
             render_typedef(out, member)
-          when AST::Definitions::Const ;
+          when AST::Definitions::Const
             render_const(out, member)
           when AST::Definitions::Struct,
                AST::Definitions::Union,
-               AST::Definitions::Enum ;
+               AST::Definitions::Enum
             render_autoload(out, member)
           end
         end
@@ -65,21 +63,20 @@ module Xdrgen
 
       def render_definition(defn)
         case defn
-        when AST::Definitions::Struct ;
+        when AST::Definitions::Struct
           render_struct defn
-        when AST::Definitions::Enum ;
+        when AST::Definitions::Enum
           render_enum defn
-        when AST::Definitions::Union ;
+        when AST::Definitions::Union
           render_union defn
         end
       end
 
       def render_struct(struct)
         render_element "class", struct, "< XDR::Struct" do |out|
-
           render_nested_definitions out, struct
 
-          out.balance_after /,[\s]*/ do
+          out.balance_after(/,\s*/) do
             struct.members.each do |m|
               out.puts "attribute :#{m.name.underscore}, #{decl_string(m.declaration)}"
             end
@@ -89,7 +86,7 @@ module Xdrgen
 
       def render_enum(enum)
         render_element "class", enum, "< XDR::Enum" do |out|
-          out.balance_after /,[\s]*/ do
+          out.balance_after(/,\s*/) do
             enum.members.each do |em|
               out.puts "member :#{em.name.underscore}, #{em.value}"
             end
@@ -100,14 +97,13 @@ module Xdrgen
       end
 
       def render_union(union)
-
         render_element "class", union, "< XDR::Union" do |out|
           render_nested_definitions out, union
 
           out.puts "switch_on #{type_string union.discriminant.type}, :#{union.discriminant_name}"
           out.break
 
-          out.balance_after /,[\s]*/ do
+          out.balance_after(/,\s*/) do
             union.normal_arms.each do |arm|
               arm.cases.each do |c|
                 value = c.value.text_value
@@ -122,7 +118,7 @@ module Xdrgen
           end
           out.break
 
-          out.balance_after /,[\s]*/ do
+          out.balance_after(/,\s*/) do
             union.arms.each do |a|
               next if a.void?
               out.puts "attribute :#{a.name.underscore}, #{decl_string(a.declaration)}"
@@ -146,16 +142,16 @@ module Xdrgen
 
         out.puts "include XDR::Namespace"
         out.break
-        ndefn.each{|ndefn| render_autoload out, ndefn}
+        ndefn.each { |ndefn| render_autoload out, ndefn }
         out.break
       end
 
       # TODO: find a better name
       # This renders the skeletal structure of enums, structs, and unions
-      def render_element(type, element, post_name="")
-        path               = element.fully_qualified_name.map(&:underscore).join("/") + ".rb"
-        name               = name_string element.name
-        out                = @output.open(path)
+      def render_element(type, element, post_name = "")
+        path = element.fully_qualified_name.map(&:underscore).join("/") + ".rb"
+        name = name_string element.name
+        out = @output.open_file(path)
         render_top_matter out
         render_source_comment out, element
 
@@ -195,7 +191,6 @@ module Xdrgen
         out.break
       end
 
-
       def render_containers(out, containers, &block)
         cur = containers.first
 
@@ -204,12 +199,12 @@ module Xdrgen
           return
         end
 
-        type =  case cur
-                when AST::Definitions::Union, AST::Definitions::Struct ;
+        type = case cur
+                when AST::Definitions::Union, AST::Definitions::Struct
                   "class"
                 else
                   "module"
-                end
+        end
 
         out.puts "#{type} #{name_string cur.name}"
         out.indent do
@@ -222,25 +217,25 @@ module Xdrgen
 
       def decl_string(decl)
         case decl
-        when AST::Declarations::Opaque ;
+        when AST::Declarations::Opaque
           type = decl.fixed? ? "XDR::Opaque" : "XDR::VarOpaque"
           "#{type}[#{decl.size}]"
-        when AST::Declarations::String ;
+        when AST::Declarations::String
           "XDR::String[#{decl.size}]"
-        when AST::Declarations::Array ;
+        when AST::Declarations::Array
           type = decl.fixed? ? "XDR::Array" : "XDR::VarArray"
-          args = [decl.child_type.to_s, decl.size].
-            compact.
-            map(&:to_s).
-            join(", ")
+          args = [decl.child_type.to_s, decl.size]
+            .compact
+            .map(&:to_s)
+            .join(", ")
           "#{type}[#{args}]"
-        when AST::Declarations::Optional ;
+        when AST::Declarations::Optional
           "XDR::Option[#{name_string decl.type.text_value}]"
-        when AST::Declarations::Simple ;
+        when AST::Declarations::Simple
           type_string(decl.type)
-        when AST::Declarations::Void ;
+        when AST::Declarations::Void
           "XDR::Void"
-        when AST::Concerns::NestedDefinition ;
+        when AST::Concerns::NestedDefinition
           name_string type.name
         else
           raise "Unknown declaration type: #{decl.class.name}"
@@ -249,25 +244,25 @@ module Xdrgen
 
       def type_string(type)
         case type
-        when AST::Typespecs::Int ;
+        when AST::Typespecs::Int
           "XDR::Int"
-        when AST::Typespecs::UnsignedInt ;
+        when AST::Typespecs::UnsignedInt
           "XDR::UnsignedInt"
-        when AST::Typespecs::Hyper ;
+        when AST::Typespecs::Hyper
           "XDR::Hyper"
-        when AST::Typespecs::UnsignedHyper ;
+        when AST::Typespecs::UnsignedHyper
           "XDR::UnsignedHyper"
-        when AST::Typespecs::Float ;
+        when AST::Typespecs::Float
           "XDR::Float"
-        when AST::Typespecs::Double ;
+        when AST::Typespecs::Double
           "XDR::Double"
-        when AST::Typespecs::Quadruple ;
+        when AST::Typespecs::Quadruple
           "XDR::Quadruple"
-        when AST::Typespecs::Bool ;
+        when AST::Typespecs::Bool
           "XDR::Bool"
-        when AST::Typespecs::Simple ;
+        when AST::Typespecs::Simple
           name_string type.text_value
-        when AST::Concerns::NestedDefinition ;
+        when AST::Concerns::NestedDefinition
           name_string type.name
         else
           raise "Unknown type: #{type.class.name}"
@@ -277,7 +272,6 @@ module Xdrgen
       def name_string(name)
         name.camelize
       end
-
     end
   end
 end

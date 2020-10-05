@@ -44,7 +44,6 @@ module Xdrgen::AST
     autoload :UnionArmCase
     autoload :UnionDefaultArm
     autoload :Namespace
-
   end
 
   module Declarations

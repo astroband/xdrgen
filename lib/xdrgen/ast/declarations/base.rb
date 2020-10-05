@@ -4,16 +4,17 @@ module Xdrgen::AST
       TYPE_NODES = [
         Typespecs::Base,
         Concerns::NestedDefinition,
-        Concerns::Contained,
+        Concerns::Contained
       ]
 
       def type
         search(type_s) do |node|
-          TYPE_NODES.any?{|t| node.is_a?(t)}
+          TYPE_NODES.any? { |t| node.is_a?(t) }
         end
       end
 
       private
+
       def search(cur_el, &predicate)
         return cur_el if predicate.call(cur_el)
         return if cur_el.elements.blank?

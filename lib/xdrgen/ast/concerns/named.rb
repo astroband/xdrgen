@@ -4,8 +4,8 @@ module Xdrgen::AST
       delegate :name, to: :identifier
 
       def namespaces
-        return [] unless self.is_a?(Contained)
-        self.find_ancestors(Concerns::Namespace)
+        return [] unless is_a?(Contained)
+        find_ancestors(Concerns::Namespace)
       end
 
       def fully_qualified_name

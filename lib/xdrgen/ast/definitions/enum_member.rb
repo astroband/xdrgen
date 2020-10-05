@@ -11,13 +11,12 @@ module Xdrgen::AST
 
         # enums are signed in xdr, so...
         # convert to twos complement value
-        [unsigned_value].pack("l>").unpack("l>").first
+        [unsigned_value].pack("l>").unpack1("l>")
       end
 
       memoize def enum
         find_ancestors(Enum).last
       end
-
 
       def auto_value
         index = enum.members.index(self)

@@ -1,6 +1,6 @@
 module Xdrgen::AST
   module Concerns
-    module HasChildren      
+    module HasChildren
       def children
         children_n.elements
       end

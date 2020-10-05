@@ -1,26 +1,26 @@
-require 'fileutils'
+require "fileutils"
 module Xdrgen
   class OutputFile
     SPACES_PER_INDENT = 2
 
     def initialize(path)
-      @path           = path
+      @path = path
       @current_indent = 0
 
       FileUtils.mkdir_p File.dirname(@path)
-      @io = File.open(@path, 'w')
+      @io = File.open(@path, "w")
     end
 
     def close
       @io.close
     end
 
-    def puts(s="")
+    def puts(s = "")
       write_break_if_needed
       @io.puts indented(s)
     end
 
-    def indent(step=1)
+    def indent(step = 1)
       @current_indent += step
       yield
     ensure
@@ -35,7 +35,7 @@ module Xdrgen
       @break_needed = false
     end
 
-    def balance_after(balance_regex, include_space=false)
+    def balance_after(balance_regex, include_space = false)
       @old_io = @io
       @io = StringIO.new
       yield
@@ -47,6 +47,7 @@ module Xdrgen
     end
 
     private
+
     def indented(s)
       s.indent(@current_indent * SPACES_PER_INDENT)
     end
@@ -59,17 +60,17 @@ module Xdrgen
     end
 
     def balance_string(raw, balance_regex, include_space)
-      lines            = raw.split("\n")
-      splits           = lines.map{|l| split_line_at(l, balance_regex)}
+      lines = raw.split("\n")
+      splits = lines.map { |l| split_line_at(l, balance_regex) }
 
-      max_split_length = splits.map{|s| s.first.length }.compact.max || -1
+      max_split_length = splits.map { |s| s.first.length }.compact.max || -1
       max_split_length += 1 if include_space
 
-      splits.map do |first, rest|
+      splits.map { |first, rest|
         next first if rest.blank?
 
         (first || "").ljust(max_split_length) + rest
-      end.join("\n")
+      }.join("\n")
     end
 
     def split_line_at(line, regex)
@@ -82,6 +83,5 @@ module Xdrgen
         [line[0...split_point], line[split_point..-1]]
       end
     end
-
   end
 end

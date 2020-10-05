@@ -4,24 +4,25 @@ module Xdrgen
       MAX_INT = (2**31) - 1
       def generate
         path = "#{@namespace}_generated.ex"
-        out = @output.open(path)
+        out = @output.open_file(path)
 
         render_define_block(out) do
-          out.indent() do
+          out.indent do
             render_definitions(out, @top)
           end
         end
       end
 
       private
+
       def render_definitions(out, node)
-        node.definitions.each{|n| render_definition out, n }
-        node.namespaces.each{|n| render_definitions out, n }
+        node.definitions.each { |n| render_definition out, n }
+        node.namespaces.each { |n| render_definitions out, n }
       end
 
       def render_nested_definitions(out, defn)
         return unless defn.respond_to? :nested_definitions
-        defn.nested_definitions.each{|ndefn| render_definition out, ndefn}
+        defn.nested_definitions.each { |ndefn| render_definition out, ndefn }
       end
 
       def render_definition(out, defn)
@@ -29,15 +30,15 @@ module Xdrgen
         render_source_comment(out, defn)
 
         case defn
-        when AST::Definitions::Struct ;
+        when AST::Definitions::Struct
           render_struct out, defn
-        when AST::Definitions::Enum ;
+        when AST::Definitions::Enum
           render_enum out, defn
-        when AST::Definitions::Union ;
+        when AST::Definitions::Union
           render_union out, defn
-        when AST::Definitions::Typedef ;
+        when AST::Definitions::Typedef
           render_typedef out, defn
-        when AST::Definitions::Const ;
+        when AST::Definitions::Const
           render_const out, defn
         end
 
@@ -85,7 +86,6 @@ module Xdrgen
         out.puts "end"
         out.break
       end
-
 
       def render_typedef(out, typedef)
         out.puts "define_type(\"#{name typedef}\", #{build_type_args typedef.declaration.type})"
@@ -158,6 +158,7 @@ module Xdrgen
       end
 
       private
+
       def name(named)
         return nil unless named.respond_to?(:name)
 
@@ -165,7 +166,7 @@ module Xdrgen
 
         # NOTE: classify will strip plurality, so we restore it if necessary
         plural = named.name.downcase.pluralize == named.name.downcase
-        base   = named.name.underscore.classify
+        base = named.name.underscore.classify
         result = plural ? base.pluralize : base
 
         "#{parent}#{result}"

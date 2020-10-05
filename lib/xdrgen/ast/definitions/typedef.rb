@@ -13,7 +13,6 @@ module Xdrgen::AST
 
         cur
       end
-
     end
   end
 end

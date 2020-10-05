@@ -1,10 +1,8 @@
-require 'set'
+require "set"
 
 module Xdrgen
   module Generators
-
     class Java < Xdrgen::Generators::Base
-
       def generate
         render_lib
         render_definitions(@top)
@@ -13,34 +11,34 @@ module Xdrgen
       def render_lib
         template = IO.read(__dir__ + "/java/XdrDataInputStream.erb")
         result = ERB.new(template).result binding
-        @output.write  "XdrDataInputStream.java", result
+        @output.write "XdrDataInputStream.java", result
 
         template = IO.read(__dir__ + "/java/XdrDataOutputStream.erb")
         result = ERB.new(template).result binding
-        @output.write  "XdrDataOutputStream.java", result
+        @output.write "XdrDataOutputStream.java", result
 
         template = IO.read(__dir__ + "/java/XdrElement.erb")
         result = ERB.new(template).result binding
-        @output.write  "XdrElement.java", result
+        @output.write "XdrElement.java", result
 
         template = IO.read(__dir__ + "/java/XdrString.erb")
         result = ERB.new(template).result binding
-        @output.write  "XdrString.java", result
+        @output.write "XdrString.java", result
       end
 
       def render_definitions(node)
-        node.namespaces.each{|n| render_definitions n }
+        node.namespaces.each { |n| render_definitions n }
         node.definitions.each(&method(:render_definition))
       end
 
       def add_imports_for_definition(defn, imports)
         case defn
-        when AST::Definitions::Struct ;
+        when AST::Definitions::Struct
           defn.members.each do |m|
             if is_decl_array(m.declaration)
-              imports.add('java.util.Arrays')
+              imports.add("java.util.Arrays")
             else
-              imports.add('com.google.common.base.Objects')
+              imports.add("com.google.common.base.Objects")
             end
           end
           # if we have more than one member field then the
@@ -50,24 +48,24 @@ module Xdrgen
           if defn.members.length > 1
             imports.add("com.google.common.base.Objects")
           end
-        when AST::Definitions::Enum ;
+        when AST::Definitions::Enum
           # no imports required for enums
-        when AST::Definitions::Union ;
-          nonVoidArms = defn.arms.select { |arm| !arm.void? }
+        when AST::Definitions::Union
+          non_void_arms = defn.arms.select { |arm| !arm.void? }
           # add 1 because of the discriminant
-          totalFields = nonVoidArms.length + 1
+          total_fields = non_void_arms.length + 1
 
           if is_type_array(defn.discriminant.type)
-            imports.add('java.util.Arrays')
+            imports.add("java.util.Arrays")
           else
-            imports.add('com.google.common.base.Objects')
+            imports.add("com.google.common.base.Objects")
           end
 
-          nonVoidArms.each do |a|
+          non_void_arms.each do |a|
             if is_decl_array(a.declaration)
-              imports.add('java.util.Arrays')
+              imports.add("java.util.Arrays")
             else
-              imports.add('com.google.common.base.Objects')
+              imports.add("com.google.common.base.Objects")
             end
           end
 
@@ -76,19 +74,19 @@ module Xdrgen
           # Objects.hashCode(field1, field2, ..., fieldN)
           # therefore, we should always import com.google.common.base.Objects
           # if we have more than one field
-          if totalFields > 1
+          if total_fields > 1
             imports.add("com.google.common.base.Objects")
           end
-        when AST::Definitions::Typedef ;
+        when AST::Definitions::Typedef
           if is_decl_array(defn.declaration)
-            imports.add('java.util.Arrays')
+            imports.add("java.util.Arrays")
           else
-            imports.add('com.google.common.base.Objects')
+            imports.add("com.google.common.base.Objects")
           end
         end
 
         if defn.respond_to? :nested_definitions
-          defn.nested_definitions.each{ |child_defn| add_imports_for_definition(child_defn, imports) }
+          defn.nested_definitions.each { |child_defn| add_imports_for_definition(child_defn, imports) }
         end
       end
 
@@ -97,21 +95,21 @@ module Xdrgen
         add_imports_for_definition(defn, imports)
 
         case defn
-        when AST::Definitions::Struct ;
+        when AST::Definitions::Struct
           render_element "public class", imports, defn do |out|
             render_struct defn, out
             render_nested_definitions defn, out
           end
-        when AST::Definitions::Enum ;
+        when AST::Definitions::Enum
           render_element "public enum", imports, defn do |out|
             render_enum defn, out
           end
-        when AST::Definitions::Union ;
+        when AST::Definitions::Union
           render_element "public class", imports, defn do |out|
             render_union defn, out
             render_nested_definitions defn, out
           end
-        when AST::Definitions::Typedef ;
+        when AST::Definitions::Typedef
           render_element "public class", imports, defn do |out|
             render_typedef defn, out
           end
@@ -120,24 +118,24 @@ module Xdrgen
 
       def render_nested_definitions(defn, out)
         return unless defn.respond_to? :nested_definitions
-        defn.nested_definitions.each{|ndefn|
+        defn.nested_definitions.each do |ndefn|
           case ndefn
-          when AST::Definitions::Struct ;
+          when AST::Definitions::Struct
             name = name ndefn
             out.puts "public static class #{name} {"
             out.indent do
               render_struct ndefn, out
-              render_nested_definitions ndefn , out
+              render_nested_definitions ndefn, out
             end
             out.puts "}"
-          when AST::Definitions::Enum ;
+          when AST::Definitions::Enum
             name = name ndefn
             out.puts "public static enum #{name} {"
             out.indent do
               render_enum ndefn, out
             end
             out.puts "}"
-          when AST::Definitions::Union ;
+          when AST::Definitions::Union
             name = name ndefn
             out.puts "public static class #{name} {"
             out.indent do
@@ -145,7 +143,7 @@ module Xdrgen
               render_nested_definitions ndefn, out
             end
             out.puts "}"
-          when AST::Definitions::Typedef ;
+          when AST::Definitions::Typedef
             name = name ndefn
             out.puts "public static class #{name} {"
             out.indent do
@@ -153,13 +151,13 @@ module Xdrgen
             end
             out.puts "}"
           end
-        }
+        end
       end
 
-      def render_element(type, imports, element, post_name="implements XdrElement")
+      def render_element(type, imports, element, post_name = "implements XdrElement")
         path = element.name.camelize + ".java"
         name = name_string element.name
-        out  = @output.open(path)
+        out = @output.open_file(path)
         render_top_matter out
         imports.each do |import|
           out.puts "import #{import};"
@@ -175,7 +173,7 @@ module Xdrgen
       end
 
       def render_enum(enum, out)
-        out.balance_after /,[\s]*/ do
+        out.balance_after(/,\s*/) do
           enum.members.each do |em|
             out.puts "#{em.name}(#{em.value}),"
           end
@@ -223,15 +221,14 @@ module Xdrgen
         struct.members.each do |m|
           out.puts <<-EOS.strip_heredoc
             private #{decl_string(m.declaration)} #{m.name};
-            public #{decl_string(m.declaration)} get#{m.name.slice(0,1).capitalize+m.name.slice(1..-1)}() {
+            public #{decl_string(m.declaration)} get#{m.name.slice(0, 1).capitalize + m.name.slice(1..-1)}() {
               return this.#{m.name};
             }
-            public void set#{m.name.slice(0,1).capitalize+m.name.slice(1..-1)}(#{decl_string m.declaration} value) {
+            public void set#{m.name.slice(0, 1).capitalize + m.name.slice(1..-1)}(#{decl_string m.declaration} value) {
               this.#{m.name} = value;
             }
           EOS
         end
-
 
         out.puts "public static void encode(XdrDataOutputStream stream, #{name struct} encoded#{name struct}) throws IOException{"
         struct.members.each do |m|
@@ -261,7 +258,7 @@ module Xdrgen
         end
         out.puts "}"
 
-        hashCodeExpression = case struct.members.length
+        hash_code_expression = case struct.members.length
           when 0
             "0"
           when 1
@@ -284,22 +281,22 @@ module Xdrgen
         out.puts <<-EOS.strip_heredoc
           @Override
           public int hashCode() {
-            return #{hashCodeExpression};
+            return #{hash_code_expression};
           }
         EOS
 
-        equalParts = struct.members.map { |m|
+        equal_parts = struct.members.map { |m|
           if is_decl_array(m.declaration)
             "Arrays.equals(this.#{m.name}, other.#{m.name})"
           else
             "Objects.equal(this.#{m.name}, other.#{m.name})"
           end
         }
-        equalExpression = case equalParts.length
+        equal_expression = case equal_parts.length
           when 0
             "true"
           else
-            equalParts.join(" && ")
+            equal_parts.join(" && ")
         end
         type = name struct
         out.puts <<-EOS.strip_heredoc
@@ -310,7 +307,7 @@ module Xdrgen
             }
 
             #{type} other = (#{type}) object;
-            return #{equalExpression};
+            return #{equal_expression};
           }
         EOS
 
@@ -320,14 +317,13 @@ module Xdrgen
       def render_typedef(typedef, out)
         out.puts <<-EOS.strip_heredoc
           private #{decl_string typedef.declaration} #{typedef.name};
-          public #{decl_string typedef.declaration} get#{typedef.name.slice(0,1).capitalize+typedef.name.slice(1..-1)}() {
+          public #{decl_string typedef.declaration} get#{typedef.name.slice(0, 1).capitalize + typedef.name.slice(1..-1)}() {
             return this.#{typedef.name};
           }
-          public void set#{typedef.name.slice(0,1).capitalize+typedef.name.slice(1..-1)}(#{decl_string typedef.declaration} value) {
+          public void set#{typedef.name.slice(0, 1).capitalize + typedef.name.slice(1..-1)}(#{decl_string typedef.declaration} value) {
             this.#{typedef.name} = value;
           }
         EOS
-
 
         out.puts "public static void encode(XdrDataOutputStream stream, #{name typedef}  encoded#{name typedef}) throws IOException {"
         encode_member "encoded#{name typedef}", typedef, out
@@ -397,16 +393,16 @@ module Xdrgen
           next if arm.void?
           out.puts <<-EOS.strip_heredoc
             private #{decl_string(arm.declaration)} #{arm.name};
-            public #{decl_string(arm.declaration)} get#{arm.name.slice(0,1).capitalize+arm.name.slice(1..-1)}() {
+            public #{decl_string(arm.declaration)} get#{arm.name.slice(0, 1).capitalize + arm.name.slice(1..-1)}() {
               return this.#{arm.name};
             }
-            public void set#{arm.name.slice(0,1).capitalize+arm.name.slice(1..-1)}(#{decl_string arm.declaration} value) {
+            public void set#{arm.name.slice(0, 1).capitalize + arm.name.slice(1..-1)}(#{decl_string arm.declaration} value) {
               this.#{arm.name} = value;
             }
           EOS
         end
         out.puts "public static void encode(XdrDataOutputStream stream, #{name union} encoded#{name union}) throws IOException {"
-        out.puts('//' + union.discriminant.type.class.to_s)
+        out.puts("//" + union.discriminant.type.class.to_s)
         out.puts("//" + type_string(union.discriminant.type))
         if union.discriminant.type.is_a?(AST::Typespecs::Int)
           out.puts "stream.writeInt(encoded#{name union}.getDiscriminant().intValue());"
@@ -424,7 +420,7 @@ module Xdrgen
         end
         union.arms.each do |arm|
           case arm
-            when AST::Definitions::UnionDefaultArm ;
+            when AST::Definitions::UnionDefaultArm
               out.puts "default:"
             else
               arm.cases.each do |kase|
@@ -468,7 +464,7 @@ module Xdrgen
 
         union.arms.each do |arm|
           case arm
-            when AST::Definitions::UnionDefaultArm ;
+            when AST::Definitions::UnionDefaultArm
               out.puts "default:"
             else
               arm.cases.each do |kase|
@@ -493,39 +489,39 @@ module Xdrgen
         end
         out.puts "}"
 
-        nonVoidArms = union.arms.select { |arm| !arm.void? }
+        non_void_arms = union.arms.select { |arm| !arm.void? }
 
-        discriminantPart = if is_type_array(union.discriminant.type)
+        discriminant_part = if is_type_array(union.discriminant.type)
           "Arrays.hashCode(this.#{union.discriminant.name})"
         else
           "this.#{union.discriminant.name}"
         end
 
-        parts = nonVoidArms.map { |a|
+        parts = non_void_arms.map { |a|
           if is_decl_array(a.declaration)
             "Arrays.hashCode(this.#{a.name})"
           else
             "this.#{a.name}"
           end
         }
-        parts.append(discriminantPart)
+        parts.append(discriminant_part)
 
-        hashCodeExpression = "Objects.hashCode(#{parts.join(", ")})"
+        hash_code_expression = "Objects.hashCode(#{parts.join(", ")})"
         out.puts <<-EOS.strip_heredoc
           @Override
           public int hashCode() {
-            return #{hashCodeExpression};
+            return #{hash_code_expression};
           }
         EOS
 
-        equalParts = nonVoidArms.map { |a|
+        equal_parts = non_void_arms.map { |a|
           if is_decl_array(a.declaration)
             "Arrays.equals(this.#{a.name}, other.#{a.name})"
           else
             "Objects.equal(this.#{a.name}, other.#{a.name})"
           end
         }
-        equalParts.append(
+        equal_parts.append(
           if is_type_array(union.discriminant.type)
             "Arrays.equals(this.#{union.discriminant.name}, other.#{union.discriminant.name})"
           else
@@ -533,11 +529,11 @@ module Xdrgen
           end
         )
 
-        equalExpression = case equalParts.length
+        equal_expression = case equal_parts.length
           when 0
             "true"
           else
-            equalParts.join(" && ")
+            equal_parts.join(" && ")
         end
         type = name union
         out.puts <<-EOS.strip_heredoc
@@ -548,7 +544,7 @@ module Xdrgen
             }
 
             #{type} other = (#{type}) object;
-            return #{equalExpression};
+            return #{equal_expression};
           }
         EOS
 
@@ -595,16 +591,16 @@ module Xdrgen
           out.puts "stream.writeInt(1);"
         end
         case member.declaration
-        when AST::Declarations::Opaque ;
+        when AST::Declarations::Opaque
           out.puts "int #{member.name}size = #{value}.#{member.name}.length;"
           unless member.declaration.fixed?
             out.puts "stream.writeInt(#{member.name}size);"
           end
           out.puts <<-EOS.strip_heredoc
-            stream.write(#{value}.get#{member.name.slice(0,1).capitalize+member.name.slice(1..-1)}(), 0, #{member.name}size);
+            stream.write(#{value}.get#{member.name.slice(0, 1).capitalize + member.name.slice(1..-1)}(), 0, #{member.name}size);
           EOS
-        when AST::Declarations::Array ;
-          out.puts "int #{member.name}size = #{value}.get#{member.name.slice(0,1).capitalize+member.name.slice(1..-1)}().length;"
+        when AST::Declarations::Array
+          out.puts "int #{member.name}size = #{value}.get#{member.name.slice(0, 1).capitalize + member.name.slice(1..-1)}().length;"
           unless member.declaration.fixed?
             out.puts "stream.writeInt(#{member.name}size);"
           end
@@ -625,27 +621,27 @@ module Xdrgen
 
       def encode_type(type, value)
         case type
-        when AST::Typespecs::Int ;
+        when AST::Typespecs::Int
           "stream.writeInt(#{value})"
-        when AST::Typespecs::UnsignedInt ;
+        when AST::Typespecs::UnsignedInt
           "stream.writeInt(#{value})"
-        when AST::Typespecs::Hyper ;
+        when AST::Typespecs::Hyper
           "stream.writeLong(#{value})"
-        when AST::Typespecs::UnsignedHyper ;
+        when AST::Typespecs::UnsignedHyper
           "stream.writeLong(#{value})"
-        when AST::Typespecs::Float ;
+        when AST::Typespecs::Float
           "stream.writeFloat(#{value})"
-        when AST::Typespecs::Double ;
+        when AST::Typespecs::Double
           "stream.writeDouble(#{value})"
-        when AST::Typespecs::Quadruple ;
+        when AST::Typespecs::Quadruple
           raise "cannot render quadruple in golang"
-        when AST::Typespecs::Bool ;
+        when AST::Typespecs::Bool
           "stream.writeInt(#{value} ? 1 : 0)"
-        when AST::Typespecs::String ;
+        when AST::Typespecs::String
           "#{value}.encode(stream)"
-        when AST::Typespecs::Simple ;
+        when AST::Typespecs::Simple
           "#{name type.resolved_type}.encode(stream, #{value})"
-        when AST::Concerns::NestedDefinition ;
+        when AST::Concerns::NestedDefinition
           "#{name type}.encode(stream, #{value})"
         else
           raise "Unknown typespec: #{type.class.name}"
@@ -654,7 +650,7 @@ module Xdrgen
 
       def decode_member(value, member, out)
         case member.declaration
-        when AST::Declarations::Void ;
+        when AST::Declarations::Void
           return
         end
         if member.type.sub_type == :optional
@@ -664,8 +660,8 @@ module Xdrgen
           EOS
         end
         case member.declaration
-        when AST::Declarations::Opaque ;
-          if (member.declaration.fixed?)
+        when AST::Declarations::Opaque
+          if member.declaration.fixed?
             out.puts "int #{member.name}size = #{member.declaration.size};"
           else
             out.puts "int #{member.name}size = stream.readInt();"
@@ -674,8 +670,8 @@ module Xdrgen
             #{value}.#{member.name} = new byte[#{member.name}size];
             stream.read(#{value}.#{member.name}, 0, #{member.name}size);
           EOS
-        when AST::Declarations::Array ;
-          if (member.declaration.fixed?)
+        when AST::Declarations::Array
+          if member.declaration.fixed?
             out.puts "int #{member.name}size = #{member.declaration.size};"
           else
             out.puts "int #{member.name}size = stream.readInt();"
@@ -696,27 +692,27 @@ module Xdrgen
 
       def decode_type(decl)
         case decl.type
-        when AST::Typespecs::Int ;
+        when AST::Typespecs::Int
           "stream.readInt()"
-        when AST::Typespecs::UnsignedInt ;
+        when AST::Typespecs::UnsignedInt
           "stream.readInt()"
-        when AST::Typespecs::Hyper ;
+        when AST::Typespecs::Hyper
           "stream.readLong()"
-        when AST::Typespecs::UnsignedHyper ;
+        when AST::Typespecs::UnsignedHyper
           "stream.readLong()"
-        when AST::Typespecs::Float ;
+        when AST::Typespecs::Float
           "stream.readFloat()"
-        when AST::Typespecs::Double ;
+        when AST::Typespecs::Double
           "stream.readDouble()"
-        when AST::Typespecs::Quadruple ;
+        when AST::Typespecs::Quadruple
           raise "cannot render quadruple in golang"
-        when AST::Typespecs::Bool ;
+        when AST::Typespecs::Bool
           "stream.readInt() == 1 ? true : false"
-        when AST::Typespecs::String ;
+        when AST::Typespecs::String
           "XdrString.decode(stream, #{decl.size})"
-        when AST::Typespecs::Simple ;
+        when AST::Typespecs::Simple
           "#{name decl.type.resolved_type}.decode(stream)"
-        when AST::Concerns::NestedDefinition ;
+        when AST::Concerns::NestedDefinition
           "#{name decl.type}.decode(stream)"
         else
           raise "Unknown typespec: #{decl.type.class.name}"
@@ -725,15 +721,15 @@ module Xdrgen
 
       def decl_string(decl)
         case decl
-        when AST::Declarations::Opaque ;
+        when AST::Declarations::Opaque
           "byte[]"
-        when AST::Declarations::String ;
+        when AST::Declarations::String
           "XdrString"
-        when AST::Declarations::Array ;
+        when AST::Declarations::Array
           "#{type_string decl.type}[]"
-        when AST::Declarations::Optional ;
-          "#{type_string(decl.type)}"
-        when AST::Declarations::Simple ;
+        when AST::Declarations::Optional
+          type_string(decl.type).to_s
+        when AST::Declarations::Simple
           type_string(decl.type)
         else
           raise "Unknown declaration type: #{decl.class.name}"
@@ -742,14 +738,14 @@ module Xdrgen
 
       def is_decl_array(decl)
         case decl
-        when AST::Declarations::Opaque ;
+        when AST::Declarations::Opaque
           true
-        when AST::Declarations::Array ;
+        when AST::Declarations::Array
           true
-        when AST::Declarations::Optional ;
+        when AST::Declarations::Optional
           is_type_array(decl.type)
-        when AST::Declarations::Simple ;
-        is_type_array(decl.type)
+        when AST::Declarations::Simple
+          is_type_array(decl.type)
         else
           false
         end
@@ -757,7 +753,7 @@ module Xdrgen
 
       def is_type_array(type)
         case type
-        when AST::Typespecs::Opaque ;
+        when AST::Typespecs::Opaque
           true
         else
           false
@@ -766,29 +762,29 @@ module Xdrgen
 
       def type_string(type)
         case type
-        when AST::Typespecs::Int ;
+        when AST::Typespecs::Int
           "Integer"
-        when AST::Typespecs::UnsignedInt ;
+        when AST::Typespecs::UnsignedInt
           "Integer"
-        when AST::Typespecs::Hyper ;
+        when AST::Typespecs::Hyper
           "Long"
-        when AST::Typespecs::UnsignedHyper ;
+        when AST::Typespecs::UnsignedHyper
           "Long"
-        when AST::Typespecs::Float ;
+        when AST::Typespecs::Float
           "Float"
-        when AST::Typespecs::Double ;
+        when AST::Typespecs::Double
           "Double"
-        when AST::Typespecs::Quadruple ;
+        when AST::Typespecs::Quadruple
           raise "cannot render quadruple in golang"
-        when AST::Typespecs::Bool ;
+        when AST::Typespecs::Bool
           "Boolean"
-        when AST::Typespecs::Opaque ;
+        when AST::Typespecs::Opaque
           "Byte[#{type.size}]"
-        when AST::Typespecs::String ;
+        when AST::Typespecs::String
           "XdrString"
-        when AST::Typespecs::Simple ;
+        when AST::Typespecs::Simple
           name type.resolved_type
-        when AST::Concerns::NestedDefinition ;
+        when AST::Concerns::NestedDefinition
           name type
         else
           raise "Unknown typespec: #{type.class.name}"

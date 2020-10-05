@@ -2,9 +2,9 @@ module FixtureProvider
   extend ActiveSupport::Concern
 
   included do |base|
-    let(:fixture_paths)          { self.class.fixture_paths }
-    let(:parser_fixture_paths)   { self.class.parser_fixture_paths }
-    let(:generator_fixture_paths){ self.class.generator_fixture_paths }
+    let(:fixture_paths) { self.class.fixture_paths }
+    let(:parser_fixture_paths) { self.class.parser_fixture_paths }
+    let(:generator_fixture_paths) { self.class.generator_fixture_paths }
   end
 
   class_methods do
@@ -22,6 +22,6 @@ module FixtureProvider
   end
 end
 
-RSpec::configure do |c|
+RSpec.configure do |c|
   c.include FixtureProvider
 end
