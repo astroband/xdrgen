@@ -1,0 +1,11 @@
+require:
+- rubocop-rspec
+- standard
+
+inherit_gem:
+  standard: config/base.yml
+  rubocop-rspec: config/default.yml
+
+AllCops:
+  Exclude:
+  - 'tmp/**/*'
